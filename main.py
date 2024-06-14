@@ -135,13 +135,14 @@ class MiniBatchDictionaryLearning:
                 # Compute the residual excluding the contribution of the j-th atom
                 residual = x - np.dot(dictionary.T, alphas) + alphas[j] * dictionary[j]
                 # Update the coefficient for the j-th atom
-                rho = np.dot(dictionary[j], residual)
+                rho = alphas[j] + np.dot(dictionary[j], residual)
+                # soft-threshold
                 if rho < -self.alpha / 2:
-                    alphas[j] += (rho + self.alpha / 2) / np.dot(
+                    alphas[j] = (rho + self.alpha / 2) / np.dot(
                         dictionary[j], dictionary[j]
                     )
                 elif rho > self.alpha / 2:
-                    alphas[j] += (rho - self.alpha / 2) / np.dot(
+                    alphas[j] = (rho - self.alpha / 2) / np.dot(
                         dictionary[j], dictionary[j]
                     )
                 else:
