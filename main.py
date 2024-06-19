@@ -255,23 +255,29 @@ def main():
     plt.savefig("sklearn_reconstruction.png", dpi=300)
 
     # ============ Customised Mini-Batch Dictionary Learning ============
-    custom_dict_learning = MiniBatchDictionaryLearning(
-        n_components=n_components,
-        alpha=alpha,
-        batch_size=batch_size,
-        n_iter=n_iter,
-        SC_solver="lasso",
-    )
-    start_time = time.time()
-    custom_dict_learning.fit(faces)
-    print(f"custom implementation time: {time.time() - start_time:.2f} seconds")
-    custom_reconstruction = custom_dict_learning.reconstruct(faces)
-    custom_mse = mean_squared_error(faces, custom_reconstruction)
-    # Print reconstruction errors
-    print("Custom Mini-Batch Dictionary Learning MSE:", custom_mse)
-    # Visualize the reconstruction
-    plot_faces(custom_reconstruction[:18], titles=["Custom Reconstruction"] * 18)
-    plt.savefig("custom_reconstruction.png", dpi=300)
+    for sc_solver in ["lasso", "ista"]:
+        custom_dict_learning = MiniBatchDictionaryLearning(
+            n_components=n_components,
+            alpha=alpha,
+            batch_size=batch_size,
+            n_iter=n_iter,
+            SC_solver=sc_solver,
+        )
+        start_time = time.time()
+        custom_dict_learning.fit(faces)
+        print(
+            f"custom implementation with {sc_solver} solver took time: {time.time() - start_time:.2f} seconds"
+        )
+        custom_reconstruction = custom_dict_learning.reconstruct(faces)
+        custom_mse = mean_squared_error(faces, custom_reconstruction)
+        # Print reconstruction errors
+        print(
+            f"Custom Mini-Batch Dictionary Learning with {sc_solver} solver MSE:",
+            custom_mse,
+        )
+        # Visualize the reconstruction
+        plot_faces(custom_reconstruction[:18], titles=["Custom Reconstruction"] * 18)
+        plt.savefig(f"custom_reconstruction with {sc_solver} solver.png", dpi=300)
 
     # close all figures
     plt.close("all")
