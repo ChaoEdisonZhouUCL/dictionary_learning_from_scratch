@@ -60,10 +60,16 @@ class MiniBatchDictionaryLearning:
         self.batch_size = batch_size
         self.n_iter = n_iter
         self.tol = tol
+
+        self.sc_solver_type = SC_solver
         if SC_solver == "lasso":
             self.SC_solver = self.lasso_lars_solver
         elif SC_solver == "lasso_lar":
             self.SC_solver = self.Lasso_solver
+        elif SC_solver == "ista":
+            self.SC_solver = self.ista_solver
+        else:
+            raise ValueError("SC_solver should be 'lasso' or 'lasso_lar' or 'ista'")
 
     def _initialize_dict(self, X):
         epsilon = 1e-5
@@ -135,7 +141,7 @@ class MiniBatchDictionaryLearning:
                 # Compute the residual excluding the contribution of the j-th atom
                 residual = x - np.dot(dictionary.T, alphas) + alphas[j] * dictionary[j]
                 # Update the coefficient for the j-th atom
-                rho = alphas[j] + np.dot(dictionary[j], residual)
+                rho = np.dot(dictionary[j], residual)
                 # soft-threshold
                 if rho < -self.alpha / 2:
                     alphas[j] = (rho + self.alpha / 2) / np.dot(
@@ -154,6 +160,32 @@ class MiniBatchDictionaryLearning:
         codes = np.zeros((n_samples, self.n_components))
         for i in range(n_samples):
             codes[i, :] = self.lasso_coordinate_descent(X[i, :], self.dictionary_)
+        return codes
+
+    def soft_threshold(self, X, alpha):
+        return np.sign(X) * np.maximum(np.abs(X) - alpha, 0)
+
+    def ista_solver(self, X, max_iter=10, tol=1e-8):
+        n_samples, _ = X.shape
+        n_atoms = self.dictionary_.shape[0]
+        codes = np.zeros((n_samples, n_atoms))
+
+        lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
+        step_size = 1.0 / lipschitz_const
+
+        residual = X.copy()
+
+        for _ in range(max_iter):
+            codes_old = codes.copy()
+            grad = np.dot(residual, self.dictionary_)  # Corrected gradient calculation
+            codes = self.soft_threshold(
+                codes - step_size * grad, self.alpha * step_size
+            )
+            residual = X - np.dot(codes, self.dictionary_)
+
+            if np.linalg.norm(codes - codes_old) < tol:
+                break
+
         return codes
 
     def fit(self, X):
@@ -186,7 +218,10 @@ class MiniBatchDictionaryLearning:
                 break
 
     def transform(self, X):
-        codes = sparse_encode(X, self.dictionary_, alpha=self.alpha)
+        if self.sc_solver_type == "ista":
+            codes = self.SC_solver(X, max_iter=1000, tol=1e-8)
+        else:
+            codes = self.SC_solver(X)
         return codes
 
     def reconstruct(self, X):
