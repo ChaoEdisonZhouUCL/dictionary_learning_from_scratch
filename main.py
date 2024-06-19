@@ -68,6 +68,8 @@ class MiniBatchDictionaryLearning:
             self.SC_solver = self.Lasso_solver
         elif SC_solver == "ista":
             self.SC_solver = self.ista_solver
+        elif SC_solver == "mw_solver":
+            self.SC_solver = self.mw_solver
         else:
             raise ValueError("SC_solver should be 'lasso' or 'lasso_lar' or 'ista'")
 
@@ -166,23 +168,52 @@ class MiniBatchDictionaryLearning:
         return np.sign(X) * np.maximum(np.abs(X) - alpha, 0)
 
     def ista_solver(self, X, max_iter=10, tol=1e-8):
-        n_samples, _ = X.shape
-        n_atoms = self.dictionary_.shape[0]
-        codes = np.zeros((n_samples, n_atoms))
+
+        codes = np.dot(X, self.dictionary_.T)
 
         lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
         step_size = 1.0 / lipschitz_const
 
-        residual = X.copy()
+        residual = np.dot(codes, self.dictionary_) - X
 
         for _ in range(max_iter):
             codes_old = codes.copy()
-            grad = np.dot(residual, self.dictionary_)  # Corrected gradient calculation
+            grad = np.dot(
+                residual, self.dictionary_.T
+            )  # Corrected gradient calculation
             codes = self.soft_threshold(
-                codes - step_size * grad, self.alpha * step_size
+                codes - 2 * step_size * grad, self.alpha * step_size
             )
-            residual = X - np.dot(codes, self.dictionary_)
+            residual = np.dot(codes, self.dictionary_) - X
+            if np.linalg.norm(codes - codes_old) < tol:
+                break
 
+        return codes
+
+    def mw_solver(self, X, max_iter=10, tol=1e-8):
+        n_samples = X.shape[0]
+        codes_w = np.zeros((n_samples, self.n_components))
+        codes_m = np.ones_like(codes_w)
+        codes = codes_m * codes_w
+
+        residual = np.dot(codes, self.dictionary_) - X
+
+        for _ in range(max_iter):
+            codes_m_old = codes_m.copy()
+            codes_w_old = codes_w.copy()
+            codes_old = codes.copy()
+            grad_m = (
+                np.dot(residual, self.dictionary_.T) * codes_w_old
+                + self.alpha * codes_m_old
+            )  # Corrected gradient calculation
+            codes_m = codes_m_old - 2 * grad_m
+            grad_w = (
+                np.dot(residual, self.dictionary_.T) * codes_m_old
+                + self.alpha * codes_w_old
+            )  # Corrected gradient calculation
+            codes_w = codes_w_old - 2 * grad_w
+            codes = codes_m * codes_w
+            residual = np.dot(codes, self.dictionary_) - X
             if np.linalg.norm(codes - codes_old) < tol:
                 break
 
@@ -211,14 +242,14 @@ class MiniBatchDictionaryLearning:
                 a_prev = a_curr
                 b_prev = b_curr
 
-            custom_reconstruction = self.reconstruct(X)
+            custom_reconstruction = np.dot(self.SC_solver(X), self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
             print(f"Iteration {iteration+1}, error: {custom_mse:.6f}")
             if custom_mse < self.tol:
                 break
 
     def transform(self, X):
-        if self.sc_solver_type == "ista":
+        if self.sc_solver_type == "ista" or self.sc_solver_type == "mw_solver":
             codes = self.SC_solver(X, max_iter=1000, tol=1e-8)
         else:
             codes = self.SC_solver(X)
@@ -232,30 +263,30 @@ class MiniBatchDictionaryLearning:
 def main():
     # Parameters
     n_components = 50
-    alpha = 1e-3
+    alpha = 1.0
     batch_size = 100
     n_iter = 5
 
-    # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
-    sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
-        n_components=n_components,
-        alpha=alpha,
-        batch_size=batch_size,
-        max_iter=n_iter,
-    )
-    sklearn_dict_learning.fit(faces_centered)
-    sklearn_reconstruction = sklearn_dict_learning.transform(faces_centered).dot(
-        sklearn_dict_learning.components_
-    ) + faces.mean(axis=0)
-    sklearn_mse = mean_squared_error(faces, sklearn_reconstruction)
-    # Print reconstruction errors
-    print("Sklearn Mini-Batch Dictionary Learning MSE:", sklearn_mse)
-    # Visualize the reconstruction
-    plot_faces(sklearn_reconstruction[:18], titles=["Sklearn Reconstruction"] * 18)
-    plt.savefig("sklearn_reconstruction.png", dpi=300)
+    # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
+    # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
+    #     n_components=n_components,
+    #     alpha=alpha,
+    #     batch_size=batch_size,
+    #     max_iter=n_iter,
+    # )
+    # sklearn_dict_learning.fit(faces_centered)
+    # sklearn_reconstruction = sklearn_dict_learning.transform(faces_centered).dot(
+    #     sklearn_dict_learning.components_
+    # ) + faces.mean(axis=0)
+    # sklearn_mse = mean_squared_error(faces, sklearn_reconstruction)
+    # # Print reconstruction errors
+    # print("Sklearn Mini-Batch Dictionary Learning MSE:", sklearn_mse)
+    # # Visualize the reconstruction
+    # plot_faces(sklearn_reconstruction[:18], titles=["Sklearn Reconstruction"] * 18)
+    # plt.savefig("sklearn_reconstruction.png", dpi=300)
 
     # ============ Customised Mini-Batch Dictionary Learning ============
-    for sc_solver in ["lasso", "ista"]:
+    for sc_solver in ["mw_solver", "ista"]:
         custom_dict_learning = MiniBatchDictionaryLearning(
             n_components=n_components,
             alpha=alpha,
