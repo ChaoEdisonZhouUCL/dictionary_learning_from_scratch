@@ -348,6 +348,14 @@ if __name__ == "__main__":
     from itertools import product
 
     alpha_values = [10**x for x in range(-4, 1)]  # # sparse regularization parameter
-    m_init_values = [1.0, 0.5, 0.1, 0.05, 0.01]
-    for alpha, m_init_value in product(alpha_values, m_init_values):
-        main(alpha, m_init_value)
+    m_init_values = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0, 4, 0.3, 0.2, 0.1, 0.05, 0.01]
+
+    #  Create a pool of worker processes
+    pool = mp.Pool()
+
+    # Apply the run_main function to each combination of alpha and m_init_value in parallel
+    pool.starmap(main, product(alpha_values, m_init_values))
+
+    # Close the pool and wait for the tasks to complete
+    pool.close()
+    pool.join()
