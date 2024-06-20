@@ -283,9 +283,7 @@ class MiniBatchDictionaryLearning:
                 a_prev = a_curr
                 b_prev = b_curr
 
-            codes, codes_m_X, codes_w_X = self.SC_solver(
-                X, codes_m_X, codes_w_X, max_iter=20, return_mw=True
-            )
+            codes, codes_m_X, codes_w_X = self.SC_solver(X, max_iter=20, return_mw=True)
             custom_reconstruction = np.dot(codes, self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
             print(
