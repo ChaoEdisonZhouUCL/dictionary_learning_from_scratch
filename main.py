@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_olivetti_faces
 from sklearn.decomposition import (
     MiniBatchDictionaryLearning as SklearnMiniBatchDictionaryLearning,
@@ -23,20 +23,20 @@ faces_centered = faces - faces.mean(axis=0)
 # faces_centered -= faces_centered.mean(axis=1).reshape(n_samples, -1)
 
 
-# Function to visualize faces
-def plot_faces(images, titles=None, h=64, w=64, n_row=3, n_col=6):
-    plt.figure(figsize=(1.8 * n_col, 2.4 * n_row))
-    plt.subplots_adjust(bottom=0, left=0.01, right=0.99, top=0.90, hspace=0.35)
-    for i in range(n_row * n_col):
-        plt.subplot(n_row, n_col, i + 1)
-        plt.imshow(images[i].reshape((h, w)), cmap=plt.cm.gray)
-        plt.title(titles[i] if titles is not None else "", size=12)
-        plt.xticks(())
-        plt.yticks(())
+# # Function to visualize faces
+# def plot_faces(images, titles=None, h=64, w=64, n_row=3, n_col=6):
+#     plt.figure(figsize=(1.8 * n_col, 2.4 * n_row))
+#     plt.subplots_adjust(bottom=0, left=0.01, right=0.99, top=0.90, hspace=0.35)
+#     for i in range(n_row * n_col):
+#         plt.subplot(n_row, n_col, i + 1)
+#         plt.imshow(images[i].reshape((h, w)), cmap=plt.cm.gray)
+#         plt.title(titles[i] if titles is not None else "", size=12)
+#         plt.xticks(())
+#         plt.yticks(())
 
 
-plot_faces(faces)
-plt.savefig("olivetti_faces.png", dpi=300)
+# plot_faces(faces)
+# plt.savefig("olivetti_faces.png", dpi=300)
 
 
 # -------------- customised mini-batch dictionary learning ------------------
@@ -368,12 +368,12 @@ def main(alpha, m_init_value):
             f"Custom Mini-Batch Dictionary Learning with {sc_solver} solver MSE:",
             custom_mse,
         )
-        # Visualize the reconstruction
-        plot_faces(custom_reconstruction[:18], titles=["Custom Reconstruction"] * 18)
-        plt.savefig(f"custom_reconstruction with {sc_solver} solver.png", dpi=300)
+    #     # Visualize the reconstruction
+    #     plot_faces(custom_reconstruction[:18], titles=["Custom Reconstruction"] * 18)
+    #     plt.savefig(f"custom_reconstruction with {sc_solver} solver.png", dpi=300)
 
-    # close all figures
-    plt.close("all")
+    # # close all figures
+    # plt.close("all")
 
 
 if __name__ == "__main__":
