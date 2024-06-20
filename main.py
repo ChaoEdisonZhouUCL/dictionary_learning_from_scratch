@@ -62,6 +62,7 @@ class MiniBatchDictionaryLearning:
         self.batch_size = batch_size
         self.n_iter = n_iter
         self.tol = tol
+        self.m_init_value = m_init_value
 
         self.sc_solver_type = SC_solver
         if SC_solver == "lasso":
@@ -71,7 +72,7 @@ class MiniBatchDictionaryLearning:
         elif SC_solver == "ista":
             self.SC_solver = self.ista_solver
         elif SC_solver == "mw_solver":
-            self.SC_solver = partial(self.mw_solver, m_init_value=m_init_value)
+            self.SC_solver = self.mw_solver
         else:
             raise ValueError("SC_solver should be 'lasso' or 'lasso_lar' or 'ista'")
 
@@ -192,16 +193,35 @@ class MiniBatchDictionaryLearning:
 
         return codes
 
-    def mw_solver(self, X, max_iter=1, tol=1e-8, m_init_value=1.0):
+    def mw_solver(
+        self,
+        X,
+        codes_m_batch=None,
+        codes_w_batch=None,
+        max_iter=10,
+        tol=1e-8,
+        return_mw=False,
+    ):
         # init code
-        n_samples = X.shape[0]
-        codes_w = np.zeros((n_samples, self.n_components))
-        # codes_w = np.dot(X, self.dictionary_.T)
-        codes_m = np.ones_like(codes_w) * m_init_value
+        if codes_m_batch is not None and codes_w_batch is not None:
+            codes_w = codes_w_batch
+            # codes_w = np.dot(X, self.dictionary_.T)
+            codes_m = codes_m_batch
+
+        else:
+            n_samples = X.shape[0]
+            codes_w = np.zeros((n_samples, self.n_components))
+            codes_m = np.ones((n_samples, self.n_components)) * self.m_init_value
+
         codes = codes_m * codes_w
 
         residual = np.dot(codes, self.dictionary_) - X
-
+        lipschitz_const = np.linalg.norm(
+            np.dot(X, self.dictionary_.T).flatten(), ord=np.inf
+        )
+        # lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
+        step_size = 1.0 / lipschitz_const
+        # print(f"lipschitz_const: {lipschitz_const},step_size: {step_size}")
         for _ in range(max_iter):
             codes_m_old = codes_m.copy()
             codes_w_old = codes_w.copy()
@@ -211,13 +231,13 @@ class MiniBatchDictionaryLearning:
                 np.dot(residual, self.dictionary_.T) * codes_w_old
                 + self.alpha * codes_m_old
             )
-            codes_m = codes_m_old - 2 * grad_m
+            codes_m = codes_m_old - step_size * grad_m
             # grad_w = 2(D^T(D(m*w)-x))*m+2*lamb*w
             grad_w = (
                 np.dot(residual, self.dictionary_.T) * codes_m_old
                 + self.alpha * codes_w_old
             )
-            codes_w = codes_w_old - 2 * grad_w
+            codes_w = codes_w_old - step_size * grad_w
             codes = codes_m * codes_w
             residual = np.dot(codes, self.dictionary_) - X
             # print(
@@ -226,7 +246,10 @@ class MiniBatchDictionaryLearning:
             if np.linalg.norm(codes - codes_old) < tol:
                 break
 
-        return codes
+        if return_mw:
+            return codes, codes_m, codes_w
+        else:
+            return codes
 
     def fit(self, X):
         n_samples, _ = X.shape
@@ -235,6 +258,8 @@ class MiniBatchDictionaryLearning:
 
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
+        codes_w_X = np.zeros((n_samples, self.n_components))
+        codes_m_X = np.ones((n_samples, self.n_components)) * self.m_init_value
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
@@ -243,34 +268,41 @@ class MiniBatchDictionaryLearning:
                     batch_start : batch_start + self.batch_size
                 ]
                 X_batch = X[batch_indices]
+                codes_w_batch = codes_w_X[batch_indices]
+                codes_m_batch = codes_m_X[batch_indices]
 
-                codes = self.SC_solver(X_batch)
+                # sparse coding update
+                codes = self.SC_solver(
+                    X_batch, codes_m_batch, codes_w_batch, max_iter=10
+                )
+
+                # dictionary update
                 a_curr = a_prev + np.einsum("bi,bj->bij", codes, codes)
                 b_curr = b_prev + np.einsum("bi,bj->bij", X_batch, codes)
                 self._update_dict(A=a_curr, B=b_curr)
                 a_prev = a_curr
                 b_prev = b_curr
 
-            codes = self.SC_solver(X)
+            codes, codes_m_X, codes_w_X = self.SC_solver(X, max_iter=20, return_mw=True)
             custom_reconstruction = np.dot(codes, self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
             print(
                 f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {np.linalg.norm(codes, ord='fro')}, nuc norm: {np.linalg.norm(codes, ord='nuc')}"
             )
-            wandb.log(
-                {
-                    "reconstruction MSE": custom_mse,
-                    "code_frob_norm": np.linalg.norm(codes, ord="fro"),
-                    "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
-                },
-                step=iteration + 1,
-            )
+            # wandb.log(
+            #     {
+            #         "reconstruction MSE": custom_mse,
+            #         "code_frob_norm": np.linalg.norm(codes, ord="fro"),
+            #         "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
+            #     },
+            #     step=iteration + 1,
+            # )
             if custom_mse < self.tol:
                 break
 
     def transform(self, X):
         if self.sc_solver_type == "ista" or self.sc_solver_type == "mw_solver":
-            codes = self.SC_solver(X, max_iter=1, tol=1e-8)
+            codes = self.SC_solver(X, max_iter=50, tol=1e-8)
         else:
             codes = self.SC_solver(X)
         return codes
@@ -285,12 +317,12 @@ def main(alpha, m_init_value):
     n_components = 50
     batch_size = 200
     n_iter = 100
-    wandb.init(
-        settings=wandb.Settings(_service_wait=1200),
-        project="Continue_Sparse_Coding",
-        config={"alpha": alpha, "m_init_value": m_init_value},
-        name=f"mw with reg={alpha}, m_init={m_init_value}",
-    )
+    # wandb.init(
+    #     settings=wandb.Settings(_service_wait=1200),
+    #     project="Continue_Sparse_Coding",
+    #     config={"alpha": alpha, "m_init_value": m_init_value},
+    #     name=f"mw with reg={alpha}, m_init={m_init_value}",
+    # )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
     #     n_components=n_components,
@@ -328,7 +360,7 @@ def main(alpha, m_init_value):
         print(
             f"custom implementation with {sc_solver} solver took time: {time.time() - start_time:.2f} seconds"
         )
-        wandb.finish()
+        # wandb.finish()
         custom_reconstruction = custom_dict_learning.reconstruct(faces)
         custom_mse = mean_squared_error(faces, custom_reconstruction)
         # Print reconstruction errors
