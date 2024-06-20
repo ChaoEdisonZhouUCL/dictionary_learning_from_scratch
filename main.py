@@ -317,6 +317,8 @@ def main(alpha, m_init_value):
     n_components = 50
     batch_size = 200
     n_iter = 100
+    wandb_key = "959f092e8f1f3a1a98bd7e6577c1641bc6bb8e99"
+    wandb.login(key=wandb_key)
     wandb.init(
         settings=wandb.Settings(_service_wait=1200),
         project="Continue_Sparse_Coding",
