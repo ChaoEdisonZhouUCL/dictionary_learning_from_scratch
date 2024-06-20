@@ -9,7 +9,8 @@ import time
 from numpy.linalg import pinv
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import sparse_encode
-import warnings
+import warnings, wandb
+from functools import partial
 
 warnings.filterwarnings("ignore")
 # Load the Olivetti faces dataset
@@ -19,7 +20,7 @@ n_samples, height, width = faces.shape
 n_features = height * width
 faces = faces.reshape((n_samples, n_features))
 faces_centered = faces - faces.mean(axis=0)
-faces_centered -= faces_centered.mean(axis=1).reshape(n_samples, -1)
+# faces_centered -= faces_centered.mean(axis=1).reshape(n_samples, -1)
 
 
 # Function to visualize faces
@@ -54,6 +55,7 @@ class MiniBatchDictionaryLearning:
         n_iter=1000,
         tol=1e-8,
         SC_solver="lasso",  # "lasso" or "lasso_lar"
+        m_init_value=1.0,
     ):
         self.n_components = n_components
         self.alpha = alpha
@@ -69,7 +71,7 @@ class MiniBatchDictionaryLearning:
         elif SC_solver == "ista":
             self.SC_solver = self.ista_solver
         elif SC_solver == "mw_solver":
-            self.SC_solver = self.mw_solver
+            self.SC_solver = partial(self.mw_solver, m_init_value=m_init_value)
         else:
             raise ValueError("SC_solver should be 'lasso' or 'lasso_lar' or 'ista'")
 
@@ -190,10 +192,12 @@ class MiniBatchDictionaryLearning:
 
         return codes
 
-    def mw_solver(self, X, max_iter=10, tol=1e-8):
+    def mw_solver(self, X, max_iter=1, tol=1e-8, m_init_value=1.0):
+        # init code
         n_samples = X.shape[0]
         codes_w = np.zeros((n_samples, self.n_components))
-        codes_m = np.ones_like(codes_w)
+        # codes_w = np.dot(X, self.dictionary_.T)
+        codes_m = np.ones_like(codes_w) * m_init_value
         codes = codes_m * codes_w
 
         residual = np.dot(codes, self.dictionary_) - X
@@ -202,18 +206,23 @@ class MiniBatchDictionaryLearning:
             codes_m_old = codes_m.copy()
             codes_w_old = codes_w.copy()
             codes_old = codes.copy()
+            # grad_m = 2(D^T(D(m*w)-x))*w+2*lamb*m
             grad_m = (
                 np.dot(residual, self.dictionary_.T) * codes_w_old
                 + self.alpha * codes_m_old
-            )  # Corrected gradient calculation
+            )
             codes_m = codes_m_old - 2 * grad_m
+            # grad_w = 2(D^T(D(m*w)-x))*m+2*lamb*w
             grad_w = (
                 np.dot(residual, self.dictionary_.T) * codes_m_old
                 + self.alpha * codes_w_old
-            )  # Corrected gradient calculation
+            )
             codes_w = codes_w_old - 2 * grad_w
             codes = codes_m * codes_w
             residual = np.dot(codes, self.dictionary_) - X
+            # print(
+            #     f"mw sparse coding iter {_}, residual norm: {np.linalg.norm(residual)}"
+            # )
             if np.linalg.norm(codes - codes_old) < tol:
                 break
 
@@ -242,15 +251,26 @@ class MiniBatchDictionaryLearning:
                 a_prev = a_curr
                 b_prev = b_curr
 
-            custom_reconstruction = np.dot(self.SC_solver(X), self.dictionary_)
+            codes = self.SC_solver(X)
+            custom_reconstruction = np.dot(codes, self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
-            print(f"Iteration {iteration+1}, error: {custom_mse:.6f}")
+            print(
+                f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {np.linalg.norm(codes, ord='fro')}, nuc norm: {np.linalg.norm(codes, ord='nuc')}"
+            )
+            wandb.log(
+                {
+                    "reconstruction MSE": custom_mse,
+                    "code_frob_norm": np.linalg.norm(codes, ord="fro"),
+                    "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
+                },
+                step=iteration + 1,
+            )
             if custom_mse < self.tol:
                 break
 
     def transform(self, X):
         if self.sc_solver_type == "ista" or self.sc_solver_type == "mw_solver":
-            codes = self.SC_solver(X, max_iter=1000, tol=1e-8)
+            codes = self.SC_solver(X, max_iter=1, tol=1e-8)
         else:
             codes = self.SC_solver(X)
         return codes
@@ -260,13 +280,17 @@ class MiniBatchDictionaryLearning:
         return np.dot(codes, self.dictionary_)
 
 
-def main():
+def main(alpha, m_init_value):
     # Parameters
     n_components = 50
-    alpha = 1.0
-    batch_size = 100
-    n_iter = 5
-
+    batch_size = 200
+    n_iter = 100
+    wandb.init(
+        settings=wandb.Settings(_service_wait=1200),
+        project="Continue_Sparse_Coding",
+        config={"alpha": alpha, "m_init_value": m_init_value},
+        name=f"mw with reg={alpha}, m_init={m_init_value}",
+    )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
     #     n_components=n_components,
@@ -275,7 +299,11 @@ def main():
     #     max_iter=n_iter,
     # )
     # sklearn_dict_learning.fit(faces_centered)
-    # sklearn_reconstruction = sklearn_dict_learning.transform(faces_centered).dot(
+    # sklearn_code = sklearn_dict_learning.transform(faces_centered)
+    # print(
+    #     f'sklearn_code frob norm: {np.linalg.norm(sklearn_code, ord="fro")},nuc norm: {np.linalg.norm(sklearn_code, ord="nuc")}'
+    # )
+    # sklearn_reconstruction = sklearn_code.dot(
     #     sklearn_dict_learning.components_
     # ) + faces.mean(axis=0)
     # sklearn_mse = mean_squared_error(faces, sklearn_reconstruction)
@@ -286,19 +314,21 @@ def main():
     # plt.savefig("sklearn_reconstruction.png", dpi=300)
 
     # ============ Customised Mini-Batch Dictionary Learning ============
-    for sc_solver in ["mw_solver", "ista"]:
+    for sc_solver in ["mw_solver"]:
         custom_dict_learning = MiniBatchDictionaryLearning(
             n_components=n_components,
             alpha=alpha,
             batch_size=batch_size,
             n_iter=n_iter,
             SC_solver=sc_solver,
+            m_init_value=m_init_value,
         )
         start_time = time.time()
         custom_dict_learning.fit(faces)
         print(
             f"custom implementation with {sc_solver} solver took time: {time.time() - start_time:.2f} seconds"
         )
+        wandb.finish()
         custom_reconstruction = custom_dict_learning.reconstruct(faces)
         custom_mse = mean_squared_error(faces, custom_reconstruction)
         # Print reconstruction errors
@@ -315,4 +345,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    from itertools import product
+
+    alpha_values = [10**x for x in range(-4, 1)]  # # sparse regularization parameter
+    m_init_values = [1.0, 0.5, 0.1, 0.05, 0.01]
+    for alpha, m_init_value in product(alpha_values, m_init_values):
+        main(alpha, m_init_value)
