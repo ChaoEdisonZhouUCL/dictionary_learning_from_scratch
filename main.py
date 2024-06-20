@@ -289,14 +289,14 @@ class MiniBatchDictionaryLearning:
             print(
                 f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {np.linalg.norm(codes, ord='fro')}, nuc norm: {np.linalg.norm(codes, ord='nuc')}"
             )
-            # wandb.log(
-            #     {
-            #         "reconstruction MSE": custom_mse,
-            #         "code_frob_norm": np.linalg.norm(codes, ord="fro"),
-            #         "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
-            #     },
-            #     step=iteration + 1,
-            # )
+            wandb.log(
+                {
+                    "reconstruction MSE": custom_mse,
+                    "code_frob_norm": np.linalg.norm(codes, ord="fro"),
+                    "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
+                },
+                step=iteration + 1,
+            )
             if custom_mse < self.tol:
                 break
 
@@ -317,12 +317,12 @@ def main(alpha, m_init_value):
     n_components = 50
     batch_size = 200
     n_iter = 100
-    # wandb.init(
-    #     settings=wandb.Settings(_service_wait=1200),
-    #     project="Continue_Sparse_Coding",
-    #     config={"alpha": alpha, "m_init_value": m_init_value},
-    #     name=f"mw with reg={alpha}, m_init={m_init_value}",
-    # )
+    wandb.init(
+        settings=wandb.Settings(_service_wait=1200),
+        project="Continue_Sparse_Coding",
+        config={"alpha": alpha, "m_init_value": m_init_value},
+        name=f"mw with reg={alpha}, m_init={m_init_value}",
+    )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
     #     n_components=n_components,
@@ -360,7 +360,7 @@ def main(alpha, m_init_value):
         print(
             f"custom implementation with {sc_solver} solver took time: {time.time() - start_time:.2f} seconds"
         )
-        # wandb.finish()
+        wandb.finish()
         custom_reconstruction = custom_dict_learning.reconstruct(faces)
         custom_mse = mean_squared_error(faces, custom_reconstruction)
         # Print reconstruction errors
