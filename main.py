@@ -274,7 +274,7 @@ class MiniBatchDictionaryLearning:
 
                 # sparse coding update
                 codes_batch, codes_m_X_batch, codes_w_X_batch = self.SC_solver(
-                    X_batch, codes_m_batch, codes_w_batch, max_iter=10, return_mw=True
+                    X_batch, codes_m_batch, codes_w_batch, max_iter=1, return_mw=True
                 )
                 codes_m_X[batch_indices] = codes_m_X_batch
                 codes_w_X[batch_indices] = codes_w_X_batch
@@ -386,7 +386,7 @@ if __name__ == "__main__":
 
     alpha_values = [10**x for x in range(-4, 1)]  # # sparse regularization parameter
     alpha_values.append(0)
-    m_init_values = [5.0, 1.0, 0.5, 0.05]
+    m_init_values = [10, 5.0, 1.0, 0.5, 0.05]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
