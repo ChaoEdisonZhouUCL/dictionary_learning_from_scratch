@@ -1,4 +1,5 @@
 import numpy as np
+
 # import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_olivetti_faces
 from sklearn.decomposition import (
@@ -198,7 +199,7 @@ class MiniBatchDictionaryLearning:
         X,
         codes_m_batch=None,
         codes_w_batch=None,
-        max_iter=10,
+        max_iter=10,  # 1
         tol=1e-8,
         return_mw=False,
     ):
@@ -216,10 +217,10 @@ class MiniBatchDictionaryLearning:
         codes = codes_m * codes_w
 
         residual = np.dot(codes, self.dictionary_) - X
-        lipschitz_const = np.linalg.norm(
-            np.dot(X, self.dictionary_.T).flatten(), ord=np.inf
-        )
-        # lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
+        # lipschitz_const = np.linalg.norm(
+        #     np.dot(X, self.dictionary_.T).flatten(), ord=np.inf
+        # )
+        lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
         step_size = 1.0 / lipschitz_const
         # print(f"lipschitz_const: {lipschitz_const},step_size: {step_size}")
         for _ in range(max_iter):
@@ -272,18 +273,20 @@ class MiniBatchDictionaryLearning:
                 codes_m_batch = codes_m_X[batch_indices]
 
                 # sparse coding update
-                codes = self.SC_solver(
-                    X_batch, codes_m_batch, codes_w_batch, max_iter=10
+                codes_batch, codes_m_X_batch, codes_w_X_batch = self.SC_solver(
+                    X_batch, codes_m_batch, codes_w_batch, max_iter=10, return_mw=True
                 )
+                codes_m_X[batch_indices] = codes_m_X_batch
+                codes_w_X[batch_indices] = codes_w_X_batch
 
                 # dictionary update
-                a_curr = a_prev + np.einsum("bi,bj->bij", codes, codes)
-                b_curr = b_prev + np.einsum("bi,bj->bij", X_batch, codes)
+                a_curr = a_prev + np.einsum("bi,bj->bij", codes_batch, codes_batch)
+                b_curr = b_prev + np.einsum("bi,bj->bij", X_batch, codes_batch)
                 self._update_dict(A=a_curr, B=b_curr)
                 a_prev = a_curr
                 b_prev = b_curr
 
-            codes, codes_m_X, codes_w_X = self.SC_solver(X, max_iter=20, return_mw=True)
+            codes = codes_m_X * codes_w_X
             custom_reconstruction = np.dot(codes, self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
             print(
@@ -383,7 +386,7 @@ if __name__ == "__main__":
 
     alpha_values = [10**x for x in range(-4, 1)]  # # sparse regularization parameter
     alpha_values.append(0)
-    m_init_values = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0, 4, 0.3, 0.2, 0.1, 0.05, 0.01]
+    m_init_values = [5.0, 1.0, 0.5, 0.05]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
