@@ -212,11 +212,11 @@ class MiniBatchDictionaryLearning:
 
         else:
             n_samples = X.shape[0]
-            codes_U = np.ones((n_samples, self.n_components)) * np.sqrt(
-                1 + np.exp(2 * self.code_init_value)
+            codes_U = np.ones((n_samples, self.n_components)) * (
+                1 / (1 + np.exp(-self.code_init_value))
             )
-            codes_V = np.ones((n_samples, self.n_components)) * np.sqrt(
-                1 + np.exp(-2 * self.code_init_value)
+            codes_V = np.ones((n_samples, self.n_components)) * (
+                1 / (1 + np.exp(self.code_init_value))
             )
 
         codes = np.log(codes_U) - np.log(codes_V)
@@ -267,11 +267,11 @@ class MiniBatchDictionaryLearning:
 
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
-        codes_U_X = np.ones((n_samples, self.n_components)) * np.sqrt(
-            1 + np.exp(2 * self.code_init_value)
+        codes_U_X = np.ones((n_samples, self.n_components)) * (
+            1 / (1 + np.exp(-self.code_init_value))
         )
-        codes_V_X = np.ones((n_samples, self.n_components)) * np.sqrt(
-            1 + np.exp(-2 * self.code_init_value)
+        codes_V_X = np.ones((n_samples, self.n_components)) * (
+            1 / (1 + np.exp(self.code_init_value))
         )
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
