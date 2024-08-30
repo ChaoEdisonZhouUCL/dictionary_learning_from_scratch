@@ -74,6 +74,9 @@ class MiniBatchDictionaryLearning:
             self.SC_solver = self.ista_solver
         elif SC_solver == "mw_solver":
             self.SC_solver = self.mw_solver
+        elif SC_solver == "log_solver":
+            self.SC_solver = self.log_solver
+
         else:
             raise ValueError("SC_solver should be 'lasso' or 'lasso_lar' or 'ista'")
 
@@ -351,6 +354,7 @@ def main(alpha, m_init_value):
     # plt.savefig("sklearn_reconstruction.png", dpi=300)
 
     # ============ Customised Mini-Batch Dictionary Learning ============
+    # "mw_solver","log_solver","UPower_Solver"
     for sc_solver in ["mw_solver"]:
         custom_dict_learning = MiniBatchDictionaryLearning(
             n_components=n_components,
