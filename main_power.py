@@ -56,7 +56,7 @@ class MiniBatchDictionaryLearning:
         n_iter=1000,
         tol=1e-8,
         SC_solver="lasso",  # "lasso" or "lasso_lar"
-        u_init_value=1.0,
+        init_value=1.0,
         n=2,  # hyper-parameters for u^2n-v^2n parameterization
     ):
         self.n_components = n_components
@@ -64,7 +64,7 @@ class MiniBatchDictionaryLearning:
         self.batch_size = batch_size
         self.n_iter = n_iter
         self.tol = tol
-        self.u_init_value = u_init_value
+        self.init_value = init_value  # x
         self.n = n
 
         self.sc_solver_type = SC_solver
@@ -214,8 +214,15 @@ class MiniBatchDictionaryLearning:
 
         else:
             n_samples = X.shape[0]
-            codes_U = np.ones((n_samples, self.n_components)) * self.u_init_value
-            codes_V = codes_U
+
+            codes_U = np.power(
+                (self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+                1 / 2 * self.n,
+            )
+            codes_V = np.power(
+                (-self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+                1 / 2 * self.n,
+            )
 
         codes = np.power(codes_U, 2 * self.n) - np.power(codes_V, 2 * self.n)
 
@@ -263,8 +270,14 @@ class MiniBatchDictionaryLearning:
 
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
-        codes_U_X = np.ones((n_samples, self.n_components)) * self.u_init_value
-        codes_V_X = codes_U_X
+        codes_U_X = np.power(
+            (self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+            1 / 2 * self.n,
+        )
+        codes_V_X = np.power(
+            (-self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+            1 / 2 * self.n,
+        )
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
@@ -320,7 +333,7 @@ class MiniBatchDictionaryLearning:
         return np.dot(codes, self.dictionary_)
 
 
-def main(alpha, n, u_init_value):
+def main(alpha, n, x_init_value):
     # Parameters
     n_components = 50
     batch_size = 200
@@ -330,8 +343,8 @@ def main(alpha, n, u_init_value):
     wandb.init(
         settings=wandb.Settings(_service_wait=1200),
         project="Continue_Sparse_Coding",
-        config={"alpha": alpha, "n": n, "u_init_value": u_init_value},
-        name=f"u^2n-v^2n with reg={alpha}, n = {n}, u_init={u_init_value}",
+        config={"alpha": alpha, "n": n, "x_init_value": x_init_value},
+        name=f"u^2n-v^2n with reg={alpha}, n = {n}, xinit={x_init_value}",
     )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
