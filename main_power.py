@@ -377,7 +377,7 @@ def main(alpha, n, x_init_value):
             batch_size=batch_size,
             n_iter=n_iter,
             SC_solver=sc_solver,
-            u_init_value=u_init_value,
+            init_value=x_init_value,
             n=n,
         )
         start_time = time.time()
