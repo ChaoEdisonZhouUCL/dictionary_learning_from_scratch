@@ -2,6 +2,7 @@
 
 #SBATCH --job-name=SC
 #SBATCH --output=/home/c01chzh/CISPA-projects/pt_network-2024/tmp/job-%j.out
+#SBATCH --error=/home/c01chzh/CISPA-projects/pt_network-2024/tmp/slurm-%j.err
 
 #SBATCH --partition=r65257773x
 #SBATCH --time=6-23:30:00

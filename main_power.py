@@ -408,8 +408,8 @@ if __name__ == "__main__":
         1.0
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
-    n_orders = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    U_init_values = [1.1]
+    n_orders = [1, 2, 3, 4, 5]
+    U_init_values = [0.05, 0.1, 0.2, 0.3]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
