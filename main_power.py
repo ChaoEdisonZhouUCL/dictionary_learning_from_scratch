@@ -218,11 +218,11 @@ class MiniBatchDictionaryLearning:
             # X_init = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
             X_init = np.ones((n_samples, self.n_components)) * self.init_value
             codes_U = np.power(
-                (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
+                (X_init + np.sqrt(X_init**2 + 1)) / 2,
                 1 / 2 * self.n,
             )
             codes_V = np.power(
-                (-X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
+                (-X_init + np.sqrt(X_init**2 + 1)) / 2,
                 1 / 2 * self.n,
             )
 
@@ -275,11 +275,11 @@ class MiniBatchDictionaryLearning:
         # X_init = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
         X_init = np.ones((n_samples, self.n_components)) * self.init_value
         codes_U_X = np.power(
-            (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
+            (X_init + np.sqrt(X_init**2 + 1**2)) / 2,
             1 / 2 * self.n,
         )
         codes_V_X = np.power(
-            (-X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
+            (-X_init + np.sqrt(X_init**2 + 1**2)) / 2,
             1 / 2 * self.n,
         )
         for iteration in range(self.n_iter):
@@ -413,7 +413,7 @@ if __name__ == "__main__":
     from itertools import product
 
     alpha_values = [
-        1.0
+        0.001
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
     n_orders = [1, 2, 3, 4, 5]
