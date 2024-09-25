@@ -216,7 +216,7 @@ class MiniBatchDictionaryLearning:
             n_samples = X.shape[0]
 
             # X_init = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
-            X_init = np.ones(n_samples, self.n_components)
+            X_init = np.ones((n_samples, self.n_components)) * self.init_value
             codes_U = np.power(
                 (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
                 1 / 2 * self.n,
@@ -273,7 +273,7 @@ class MiniBatchDictionaryLearning:
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
         # X_init = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
-        X_init = np.ones(n_samples, self.n_components)
+        X_init = np.ones((n_samples, self.n_components)) * self.init_value
         codes_U_X = np.power(
             (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
             1 / 2 * self.n,
@@ -337,7 +337,7 @@ class MiniBatchDictionaryLearning:
         return np.dot(codes, self.dictionary_)
 
 
-def main(alpha, n):
+def main(alpha, n, x_init_value):
     # Parameters
     n_components = 50
     batch_size = 200
@@ -384,6 +384,7 @@ def main(alpha, n):
             batch_size=batch_size,
             n_iter=n_iter,
             SC_solver=sc_solver,
+            init_value=x_init_value,
             n=n,
         )
         start_time = time.time()
@@ -415,13 +416,13 @@ if __name__ == "__main__":
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
     n_orders = [1, 2, 3, 4, 5]
-    # U_init_values = [0.05, 0.1, 0.2, 0.3]
+    U_init_values = [0.05, 0.1, 0.2, 0.3]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
 
     # Apply the run_main function to each combination of alpha and m_init_value in parallel
-    pool.starmap(main, product(alpha_values, n_orders))
+    pool.starmap(main, product(alpha_values, n_orders, U_init_values))
 
     # Close the pool and wait for the tasks to complete
     pool.close()
