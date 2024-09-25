@@ -233,7 +233,7 @@ class MiniBatchDictionaryLearning:
         #     np.dot(X, self.dictionary_.T).flatten(), ord=np.inf
         # )
         lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
-        step_size = 1.0 / lipschitz_const
+        step_size = 0.1 / lipschitz_const
         # print(f"lipschitz_const: {lipschitz_const},step_size: {step_size}")
         for _ in range(max_iter):
             codes_U_old = codes_U.copy()
@@ -282,6 +282,8 @@ class MiniBatchDictionaryLearning:
             (-X_init + np.sqrt(X_init**2 + 1**2)) / 2,
             1 / (2 * self.n),
         )
+        print("codes_U_X:\r\n", codes_U_X)
+        print("codes_V_X:\r\n", codes_V_X)
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
@@ -416,7 +418,9 @@ if __name__ == "__main__":
         0.001
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
-    n_orders = [1, 2, 3, 4, 5]
+    n_orders = [
+        1,
+    ]
     U_init_values = [0.1]
 
     #  Create a pool of worker processes
