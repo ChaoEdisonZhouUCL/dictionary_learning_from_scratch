@@ -219,11 +219,11 @@ class MiniBatchDictionaryLearning:
             # X_init = np.ones((n_samples, self.n_components)) * self.init_value
             codes_U = np.power(
                 (X_init + np.sqrt(X_init**2 + 1)) / 2,
-                1 / 2 * self.n,
+                1 / (2 * self.n),
             )
             codes_V = np.power(
                 (-X_init + np.sqrt(X_init**2 + 1)) / 2,
-                1 / 2 * self.n,
+                1 / (2 * self.n),
             )
 
         codes = np.power(codes_U, 2 * self.n) - np.power(codes_V, 2 * self.n)
@@ -276,11 +276,11 @@ class MiniBatchDictionaryLearning:
         # X_init = np.ones((n_samples, self.n_components)) * self.init_value
         codes_U_X = np.power(
             (X_init + np.sqrt(X_init**2 + 1**2)) / 2,
-            1 / 2 * self.n,
+            1 / (2 * self.n),
         )
         codes_V_X = np.power(
             (-X_init + np.sqrt(X_init**2 + 1**2)) / 2,
-            1 / 2 * self.n,
+            1 / (2 * self.n),
         )
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
