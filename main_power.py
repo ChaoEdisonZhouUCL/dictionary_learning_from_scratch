@@ -215,12 +215,13 @@ class MiniBatchDictionaryLearning:
         else:
             n_samples = X.shape[0]
 
+            X_init = np.abs(np.random.normal(0, 0.1, (n_samples, self.n_components)))
             codes_U = np.power(
-                (self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+                (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
                 1 / 2 * self.n,
             )
             codes_V = np.power(
-                (-self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+                (-X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
                 1 / 2 * self.n,
             )
 
@@ -270,12 +271,13 @@ class MiniBatchDictionaryLearning:
 
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
+        X_init = np.abs(np.random.normal(0, 0.1, (n_samples, self.n_components)))
         codes_U_X = np.power(
-            (self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+            (X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
             1 / 2 * self.n,
         )
         codes_V_X = np.power(
-            (-self.init_value + np.sqrt(self.init_value**2 + self.alpha**2)) / 2,
+            (-X_init + np.sqrt(X_init**2 + self.alpha**2)) / 2,
             1 / 2 * self.n,
         )
         for iteration in range(self.n_iter):
@@ -333,7 +335,7 @@ class MiniBatchDictionaryLearning:
         return np.dot(codes, self.dictionary_)
 
 
-def main(alpha, n, x_init_value):
+def main(alpha, n):
     # Parameters
     n_components = 50
     batch_size = 200
@@ -343,8 +345,11 @@ def main(alpha, n, x_init_value):
     wandb.init(
         settings=wandb.Settings(_service_wait=1200),
         project="Continue_Sparse_Coding",
-        config={"alpha": alpha, "n": n, "x_init_value": x_init_value},
-        name=f"u^2n-v^2n with reg={alpha}, n = {n}, xinit={x_init_value}",
+        config={
+            "alpha": alpha,
+            "n": n,
+        },
+        name=f"u^2n-v^2n with reg={alpha}, n = {n}",
     )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
@@ -377,7 +382,6 @@ def main(alpha, n, x_init_value):
             batch_size=batch_size,
             n_iter=n_iter,
             SC_solver=sc_solver,
-            init_value=x_init_value,
             n=n,
         )
         start_time = time.time()
@@ -409,13 +413,13 @@ if __name__ == "__main__":
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
     n_orders = [1, 2, 3, 4, 5]
-    U_init_values = [0.05, 0.1, 0.2, 0.3]
+    # U_init_values = [0.05, 0.1, 0.2, 0.3]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
 
     # Apply the run_main function to each combination of alpha and m_init_value in parallel
-    pool.starmap(main, product(alpha_values, n_orders, U_init_values))
+    pool.starmap(main, product(alpha_values, n_orders))
 
     # Close the pool and wait for the tasks to complete
     pool.close()
