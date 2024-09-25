@@ -239,14 +239,14 @@ class MiniBatchDictionaryLearning:
             codes_U_old = codes_U.copy()
             codes_V_old = codes_V.copy()
             codes_old = codes.copy()
-            # grad_U = 2(D^T(D(logu-logv)-x))*u^{-1}+lamb*u^{-1}
-            grad_U = np.dot(residual, self.dictionary_.T) * (
+            # grad_U = 4n(D^T*residual)*u^{2n-1}+2*lamb*n*u^{2n-1}
+            grad_U = 2 * np.dot(residual, self.dictionary_.T) * (
                 np.power(codes_U_old, 2 * self.n - 1)
             ) + self.alpha * (np.power(codes_U_old, 2 * self.n - 1))
             codes_U = codes_U_old - step_size * 2 * self.n * grad_U
 
-            # grad_V = -2(D^T(D(logu-logv)-x))*v^{-1}+lamb*v^{-1}
-            grad_V = -np.dot(residual, self.dictionary_.T) * (
+            # grad_V = -4n(D^T*residual)*v^{2n-1}+2*lamb*n*v^{2n-1}
+            grad_V = -2 * np.dot(residual, self.dictionary_.T) * (
                 np.power(codes_V_old, 2 * self.n - 1)
             ) + self.alpha * (np.power(codes_V_old, 2 * self.n - 1))
             codes_V = codes_V_old - step_size * 2 * self.n * grad_V
