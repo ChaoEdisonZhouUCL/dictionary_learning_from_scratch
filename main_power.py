@@ -350,8 +350,9 @@ def main(alpha, n, x_init_value):
         config={
             "alpha": alpha,
             "n": n,
+            "x_init_value": x_init_value,
         },
-        name=f"u^2n-v^2n with reg={alpha}, n = {n}",
+        name=f"u^2n-v^2n with reg={alpha}, n = {n}, x_init_value = {x_init_value}",
     )
     # # ============ Sklearn built-in Mini-Batch Dictionary Learning, for comparison purpose ============
     # sklearn_dict_learning = SklearnMiniBatchDictionaryLearning(
@@ -416,7 +417,7 @@ if __name__ == "__main__":
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
     n_orders = [1, 2, 3, 4, 5]
-    U_init_values = [0.05, 0.1, 0.2, 0.3]
+    U_init_values = [0.1]
 
     #  Create a pool of worker processes
     pool = mp.Pool()
