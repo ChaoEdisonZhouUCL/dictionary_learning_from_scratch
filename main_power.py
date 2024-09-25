@@ -233,7 +233,7 @@ class MiniBatchDictionaryLearning:
         #     np.dot(X, self.dictionary_.T).flatten(), ord=np.inf
         # )
         lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
-        step_size = 0.1 / lipschitz_const
+        step_size = 0.01 / lipschitz_const
         # print(f"lipschitz_const: {lipschitz_const},step_size: {step_size}")
         for _ in range(max_iter):
             codes_U_old = codes_U.copy()
