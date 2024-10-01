@@ -77,7 +77,7 @@ def plot_log_exp():
 
 def plot_power_exp():
     # Read the CSV file
-    df = pd.read_csv("power/MSE.csv")
+    df = pd.read_csv("power/nuc_norm.csv")
 
     num_cols = len(df.columns)
 
@@ -137,11 +137,11 @@ def plot_power_exp():
     # Set the x-axis to start from 0
     plt.xlim(left=0)
     plt.xlabel("iterations", fontsize=16)
-    plt.ylabel("reconstruction MSE (log scale)", fontsize=16)
+    plt.ylabel("nuclear norm of sparse code (log scale)", fontsize=16)
     plt.legend(fontsize=16)
 
     # Save the plot as an EPS file
-    plt.savefig("power/MSE.eps", format="eps", dpi=100, bbox_inches="tight")
+    plt.savefig("power/nuc_norm.eps", format="eps", dpi=100, bbox_inches="tight")
 
     print("Plot saved as training_process.eps")
 

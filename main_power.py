@@ -298,7 +298,7 @@ class MiniBatchDictionaryLearning:
             if iteration > 0:
                 wandb.log(
                     {
-                        "code_init - code_t frob norm": np.linalg.norm(
+                        "code_in - code_t frob norm": np.linalg.norm(
                             codes - codes_old, ord="fro"
                         ),
                     },

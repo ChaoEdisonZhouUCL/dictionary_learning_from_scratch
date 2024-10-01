@@ -212,12 +212,20 @@ class MiniBatchDictionaryLearning:
 
         else:
             n_samples = X.shape[0]
-            codes_U = np.ones((n_samples, self.n_components)) * (
-                1 / (1 + np.exp(-self.code_init_value))
-            )
-            codes_V = np.ones((n_samples, self.n_components)) * (
-                1 / (1 + np.exp(self.code_init_value))
-            )
+            if self.code_init_value == "normal":
+                codes_U = 1 / (
+                    1 + np.exp(-np.random.normal(0, 1, (n_samples, self.n_components)))
+                )
+                codes_V = 1 / (
+                    1 + np.exp(np.random.normal(0, 1, (n_samples, self.n_components)))
+                )
+            else:
+                codes_U = np.ones((n_samples, self.n_components)) * (
+                    1 / (1 + np.exp(-self.code_init_value))
+                )
+                codes_V = np.ones((n_samples, self.n_components)) * (
+                    1 / (1 + np.exp(self.code_init_value))
+                )
 
         codes = np.log(codes_U) - np.log(codes_V)
 
@@ -267,12 +275,20 @@ class MiniBatchDictionaryLearning:
 
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
-        codes_U_X = np.ones((n_samples, self.n_components)) * (
-            1 / (1 + np.exp(-self.code_init_value))
-        )
-        codes_V_X = np.ones((n_samples, self.n_components)) * (
-            1 / (1 + np.exp(self.code_init_value))
-        )
+        if self.code_init_value == "normal":
+            codes_U_X = 1 / (
+                1 + np.exp(-np.random.normal(0, 1, (n_samples, self.n_components)))
+            )
+            codes_V_X = 1 / (
+                1 + np.exp(np.random.normal(0, 1, (n_samples, self.n_components)))
+            )
+        else:
+            codes_U_X = np.ones((n_samples, self.n_components)) * (
+                1 / (1 + np.exp(-self.code_init_value))
+            )
+            codes_V_X = np.ones((n_samples, self.n_components)) * (
+                1 / (1 + np.exp(self.code_init_value))
+            )
         for iteration in range(self.n_iter):
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
@@ -400,7 +416,7 @@ if __name__ == "__main__":
 
     alpha_values = [10**x for x in range(-4, 1)]  # sparse regularization parameter
     alpha_values.append(0.0)
-    code_init_values = [0.1]
+    code_init_values = ["normal"]  # 0.1
 
     #  Create a pool of worker processes
     pool = mp.Pool()
