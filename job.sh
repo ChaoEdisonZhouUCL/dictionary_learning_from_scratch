@@ -19,7 +19,7 @@ srun mkdir -p "$JOBDATADIR" "$JOBTMPDIR"
 
 srun --container-image=projects.cispa.saarland:5005#c01chzh/docker-test:v4 \
         --container-mounts="$JOBTMPDIR":/tmp \
-        python3 $HOME/CISPA-projects/pt_network-2024/dictionary_learning_from_scratch/main_power.py
+        python3 $HOME/CISPA-projects/pt_network-2024/dictionary_learning_from_scratch/main_log.py
 srun mv $HOME/CISPA-projects/pt_network-2024/tmp/job-"$SLURM_JOB_ID".out "$JOBDATADIR"/out.txt
 # srun mv "$JOBTMPDIR"/ "$JOBDATADIR"/slurm
 # srun -p gpu --container-image=projects.cispa.saarland:5005#c01chzh/docker-test:v1 --time=01:00:00 --pty bash
