@@ -290,6 +290,25 @@ class MiniBatchDictionaryLearning:
         print("codes_U_X:\r\n", codes_U_X)
         print("codes_V_X:\r\n", codes_V_X)
         for iteration in range(self.n_iter):
+            # log results
+            codes = np.power(codes_U_X, 2 * self.n) - np.power(codes_V_X, 2 * self.n)
+            custom_reconstruction = np.dot(codes, self.dictionary_)
+            custom_mse = mean_squared_error(X, custom_reconstruction)
+            code_frob_norm = np.linalg.norm(codes, ord="fro")
+            code_nuc_norm = np.linalg.norm(codes, ord="nuc")
+            print(
+                f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {code_frob_norm}, nuc norm: {code_nuc_norm}, other: {np.sum(np.abs(codes))}"
+            )
+            wandb.log(
+                {
+                    "reconstruction MSE": custom_mse,
+                    "code_frob_norm": code_frob_norm,
+                    "code_nuc_norm": code_nuc_norm,
+                    "other": np.sum(np.abs(codes)),
+                },
+                step=iteration + 1,
+            )
+            # one update
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
 
@@ -314,21 +333,6 @@ class MiniBatchDictionaryLearning:
                 a_prev = a_curr
                 b_prev = b_curr
 
-            codes = np.power(codes_U_X, 2 * self.n) - np.power(codes_V_X, 2 * self.n)
-            custom_reconstruction = np.dot(codes, self.dictionary_)
-            custom_mse = mean_squared_error(X, custom_reconstruction)
-            print(
-                f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {np.linalg.norm(codes, ord='fro')}, nuc norm: {np.linalg.norm(codes, ord='nuc')}, other: {np.sum(np.abs(codes))}"
-            )
-            wandb.log(
-                {
-                    "reconstruction MSE": custom_mse,
-                    "code_frob_norm": np.linalg.norm(codes, ord="fro"),
-                    "code_nuc_norm": np.linalg.norm(codes, ord="nuc"),
-                    "other": np.sum(np.abs(codes)),
-                },
-                step=iteration + 1,
-            )
             if custom_mse < self.tol:
                 break
 

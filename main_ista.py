@@ -268,6 +268,23 @@ class MiniBatchDictionaryLearning:
             codes_X = np.ones((n_samples, self.n_components)) * self.m_init_value
 
         for iteration in range(self.n_iter):
+            # log results
+            custom_reconstruction = np.dot(codes_X, self.dictionary_)
+            custom_mse = mean_squared_error(X, custom_reconstruction)
+            code_frob_norm = np.linalg.norm(codes_X, ord="fro")
+            code_nuc_norm = np.linalg.norm(codes_X, ord="nuc")
+            print(
+                f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {code_frob_norm}, nuc norm: {code_nuc_norm}"
+            )
+            wandb.log(
+                {
+                    "reconstruction MSE": custom_mse,
+                    "code_frob_norm": code_frob_norm,
+                    "code_nuc_norm": code_nuc_norm,
+                },
+                step=iteration + 1,
+            )
+            # one update
             np.random.shuffle(data_indices)
             for batch_start in range(0, n_samples, self.batch_size):
 
@@ -288,19 +305,6 @@ class MiniBatchDictionaryLearning:
                 a_prev = a_curr
                 b_prev = b_curr
 
-            custom_reconstruction = np.dot(codes_X, self.dictionary_)
-            custom_mse = mean_squared_error(X, custom_reconstruction)
-            print(
-                f"Iteration {iteration+1}, error: {custom_mse:.6f}, code frob norm: {np.linalg.norm(codes_X, ord='fro')}, nuc norm: {np.linalg.norm(codes_X, ord='nuc')}"
-            )
-            wandb.log(
-                {
-                    "reconstruction MSE": custom_mse,
-                    "code_frob_norm": np.linalg.norm(codes_X, ord="fro"),
-                    "code_nuc_norm": np.linalg.norm(codes_X, ord="nuc"),
-                },
-                step=iteration + 1,
-            )
             if custom_mse < self.tol:
                 break
 
