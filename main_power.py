@@ -214,8 +214,11 @@ class MiniBatchDictionaryLearning:
 
         else:
             n_samples = X.shape[0]
+            if self.init_value == "normal":
+                X_init = np.random.normal(0, 1.0, (n_samples, self.n_components))
 
-            X_init = np.abs(np.random.normal(0, 0.1, (n_samples, self.n_components)))
+            else:
+                X_init = np.ones((n_samples, self.n_components)) * self.init_value
             # X_init = np.ones((n_samples, self.n_components)) * self.init_value
             codes_U = np.power(
                 (X_init + np.sqrt(X_init**2 + 1)) / 2,
@@ -273,7 +276,7 @@ class MiniBatchDictionaryLearning:
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
         if self.init_value == "normal":
-            X_init = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
+            X_init = np.random.normal(0, 1.0, (n_samples, self.n_components))
         else:
             X_init = np.ones((n_samples, self.n_components)) * self.init_value
         codes_U_X = np.power(
