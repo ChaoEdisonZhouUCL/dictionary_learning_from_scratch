@@ -263,7 +263,7 @@ class MiniBatchDictionaryLearning:
         a_prev = 0.01 * np.identity(self.n_components)
         b_prev = 0
         if self.m_init_value == "normal":
-            codes_X = np.abs(np.random.normal(0, 1.0, (n_samples, self.n_components)))
+            codes_X = np.random.normal(0, 1.0, (n_samples, self.n_components))
         else:
             codes_X = np.ones((n_samples, self.n_components)) * self.m_init_value
 
