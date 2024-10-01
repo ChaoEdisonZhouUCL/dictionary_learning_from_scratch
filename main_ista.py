@@ -179,7 +179,7 @@ class MiniBatchDictionaryLearning:
             codes = np.dot(X, self.dictionary_.T)
 
         lipschitz_const = np.linalg.norm(self.dictionary_, ord=2) ** 2
-        step_size = 0.01 / lipschitz_const
+        step_size = 0.001 / lipschitz_const
 
         residual = np.dot(codes, self.dictionary_) - X
 
