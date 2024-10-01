@@ -77,7 +77,7 @@ def plot_log_exp():
 
 def plot_power_exp():
     # Read the CSV file
-    df = pd.read_csv("power/nuc_norm.csv")
+    df = pd.read_csv("power/MSE.csv")
 
     num_cols = len(df.columns)
 
@@ -91,7 +91,6 @@ def plot_power_exp():
 
     markers = [
         ("circle", "o"),
-        ("pixel", ","),
         ("triangle_down", "v"),
         ("triangle_up", "^"),
         ("triangle_left", "<"),
@@ -118,7 +117,7 @@ def plot_power_exp():
             df.columns[idx],
             reg_value,
             line_styles[(idx // 3) // 5][1],
-            markers[(idx // 3) // 15][1],
+            markers[(idx // 3) // 14][1],
         )
 
         plt.plot(
@@ -135,12 +134,14 @@ def plot_power_exp():
     # plt.title("Training Process for Different Configurations")
     plt.grid(True)
     plt.yscale("log")
+    # Set the x-axis to start from 0
+    plt.xlim(left=0)
     plt.xlabel("iterations", fontsize=16)
-    plt.ylabel("nuclear norm of sparse code (log scale)", fontsize=16)
+    plt.ylabel("reconstruction MSE (log scale)", fontsize=16)
     plt.legend(fontsize=16)
 
     # Save the plot as an EPS file
-    # plt.savefig("power/nuc_norm.eps", format="eps", dpi=100, bbox_inches="tight")
+    plt.savefig("power/MSE.eps", format="eps", dpi=100, bbox_inches="tight")
 
     print("Plot saved as training_process.eps")
 
@@ -233,4 +234,4 @@ def plot_lora():
 
 
 if __name__ == "__main__":
-    plot_log_exp()
+    plot_power_exp()
