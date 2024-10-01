@@ -427,7 +427,7 @@ if __name__ == "__main__":
         0.001
     ]  # [10**x for x in range(-4, 1)]   sparse regularization parameter
     # alpha_values.append(0.0)
-    n_orders = [1, 2, 3, 4, 5]
+    n_orders = [1, 2, 3]
     U_init_values = ["normal"]  # 0.1
 
     #  Create a pool of worker processes
