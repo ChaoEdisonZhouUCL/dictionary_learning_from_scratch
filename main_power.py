@@ -291,7 +291,19 @@ class MiniBatchDictionaryLearning:
         print("codes_V_X:\r\n", codes_V_X)
         for iteration in range(self.n_iter):
             # log results
+            if iteration > 0:
+                codes_old = codes.copy()
+
             codes = np.power(codes_U_X, 2 * self.n) - np.power(codes_V_X, 2 * self.n)
+            if iteration > 0:
+                wandb.log(
+                    {
+                        "code_init - code_t frob norm": np.linalg.norm(
+                            codes - codes_old, ord="fro"
+                        ),
+                    },
+                    step=iteration + 1,
+                )
             custom_reconstruction = np.dot(codes, self.dictionary_)
             custom_mse = mean_squared_error(X, custom_reconstruction)
             code_frob_norm = np.linalg.norm(codes, ord="fro")
