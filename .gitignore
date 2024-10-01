@@ -4,3 +4,12 @@ other_norm.csv
 other_norm.eps
 recon_MSE.csv
 recon_MSE.eps
+LORA/ratio.eps
+LORA/ratiowd0.001.pt
+LORA/ratiowd0.01.pt
+LORA/ratiowd0.1.pt
+LORA/ratiowd1.pt
+LORA/valaccwd0.001.pt
+LORA/valaccwd0.01.pt
+LORA/valaccwd0.1.pt
+LORA/valaccwd1.pt
